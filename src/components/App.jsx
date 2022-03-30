@@ -1,24 +1,16 @@
-import React from "react";
+import React,{useState} from "react";
  import ImageGallery from './ImageGallery/ImageGallery';
  import Searchbar from './Searchbar';
 
- 
-export  default class App extends React.Component {
-  state={
-    imageName:"",
-    
-  }
-  handleFormSubmit =(imageName)=>{
-    this.setState({imageName})
-  }
-  
-  render(){
+ function App(){
+   const [imageName, setImageName]=useState("");
+   const handleFormSubmit =(imageName)=>{
+    setImageName(imageName);}
     return (
       <div>
-     <Searchbar onSubmit ={this.handleFormSubmit }/>
-     <ImageGallery imageName={this.state.imageName} />
+     <Searchbar onSubmit ={handleFormSubmit } imageName={imageName}/>
+     <ImageGallery imageName={imageName} />
      </div>
     )
   }
- 
-};
+export  default  App

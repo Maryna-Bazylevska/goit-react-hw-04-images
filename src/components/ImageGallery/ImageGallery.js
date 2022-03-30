@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 import Button from "../Button";
 import ImageGalleryItem from "../ImageGalleryItem";
 import Loader from "../Loader";
@@ -12,44 +13,38 @@ const Status = {
   RESOLVED: "resolved",
   REJECTED: "rejected",
 };
-export default class ImageGallery extends React.Component {
-  state = {
-    items: [],
-    pageNumber: 1,
-    error: null,
-    status: Status.IDLE,
-    showModal: false,
-    largeImageURL: null,
-  };
-  componentDidUpdate(prevProps, prevState) {
-    const { imageName } = this.props;
-    if (prevProps.imageName !== this.props.imageName) {
-      this.setState({ status: Status.PENDING });
-      this.onSearch(imageName);
+function ImageGallery({ imageName }) {
+  const [items, setItems] = useState([]);
+  const [pageNumber, setPageNumber] = useState(1);
+  const [error, setErrors] = useState(false);
+  const [status, setStatus] = useState(Status.IDLE);
+  const [showModal, setShowModal] = useState(false);
+  const [largeImageURL, setLargeImageURL] = useState(null);
+  useEffect(() => {
+    if (!imageName) {
+      return;
     }
-  }
-  onSearch = () => {
-    const { imageName } = this.props;
+    setStatus(Status.PENDING);
+    setPageNumber(1);
     fetch
       .fetchImages(imageName, 1)
       .then((data) => {
         if (data.hits.length < 1) {
-          this.setState((state) => ({
-            status: Status.IDLE,
-          }));
+          setStatus(Status.IDLE);
           return alert("Something wrong!");
         } else {
-          this.setState((prevState) => ({
-            items: data.hits,
-            status: Status.RESOLVED,
-            pageNumber: prevState.pageNumber + 1,
-          }));
+          setItems(data.hits);
+          setStatus(Status.RESOLVED);
+          setPageNumber((prevState) => prevState + 1);
         }
       })
-      .catch((error) => this.setState({ error, status: Status.REJECTED }))
-      .finally(this.handleScroll());
-  };
-  handleScroll = () => {
+      .catch((error) => {
+        setStatus(Status.REJECTED);
+        setErrors(true);
+      })
+      .finally(handleScroll());
+  }, [imageName]);
+  const handleScroll = () => {
     setTimeout(() => {
       window.scrollTo({
         top: document.documentElement.scrollHeight,
@@ -58,60 +53,53 @@ export default class ImageGallery extends React.Component {
     }, 500);
   };
 
-  onLoadMore = (e) => {
+  const onLoadMore = (e) => {
     fetch
-      .fetchImages(this.props.imageName, this.state.pageNumber)
-      .then((data) =>
-        this.setState((prevState) => {
-          return {
-            pageNumber: prevState.pageNumber + 1,
-            items: [...prevState.items, ...data.hits],
-            status: "resolved",
-          };
-        })
-      )
-      .finally(this.handleScroll());
+      .fetchImages(imageName, pageNumber)
+      .then((data) => {
+        setPageNumber((prevState) => prevState + 1);
+        setItems((prevState) => [...prevState, ...data.hits]);
+        setStatus(Status.RESOLVED);
+      })
+      .finally(handleScroll());
   };
-  toggleModal = () => {
-    this.setState((state) => ({
-      showModal: !state.showModal,
-    }));
+  const toggleModal = () => {
+    setShowModal(!showModal);
   };
-  onLargeImgClick = (imageUrl) => {
-    this.setState({ largeImageURL: imageUrl });
-    this.toggleModal();
+  const onLargeImgClick = (imageUrl) => {
+    setLargeImageURL(imageUrl);
+    toggleModal();
   };
-
-  render() {
-    const { items, status, showModal, largeImageURL } = this.state;
-    if (status === "idle") {
-      return <></>;
-    }
-    if (status === "pending") {
-      return <Loader />;
-    }
-    if (status === "resolved") {
-      return (
-        <div>
-          {showModal && (
-            <Modal onClose={this.toggleModal} imageUrl={largeImageURL}>
-              <img src={largeImageURL} alt="" />
-            </Modal>
-          )}
-
-          <GaleryList>
-            {items.map(({ id, webformatURL, largeImageURL }) => (
-              <ImageGalleryItem
-                onOpenModal={this.onLargeImgClick}
-                key={id}
-                webformatURL={webformatURL}
-                largeImageURL={largeImageURL}
-              />
-            ))}
-          </GaleryList>
-          {items.length > 0 && <Button onLoadMore={this.onLoadMore} />}
-        </div>
-      );
-    }
+  if (status === Status.IDLE) {
+    return <></>;
   }
+  if (status === Status.PENDING) {
+    return <Loader />;
+  }
+  if (status === Status.RESOLVED)
+    return (
+      <div>
+        {showModal && (
+          <Modal onClose={toggleModal} imageUrl={largeImageURL}>
+            <img src={largeImageURL} alt="" />
+          </Modal>
+        )}
+
+        <GaleryList>
+          {items.map(({ id, webformatURL, largeImageURL }) => (
+            <ImageGalleryItem
+              onOpenModal={onLargeImgClick}
+              key={id}
+              webformatURL={webformatURL}
+              largeImageURL={largeImageURL}
+            />
+          ))}
+        </GaleryList>
+        {items.length > 0 && <Button onLoadMore={onLoadMore} />}
+      </div>
+    );
 }
+ImageGallery.propTypes = {
+  imageName: PropTypes.string.isRequired,
+};
+export default ImageGallery;

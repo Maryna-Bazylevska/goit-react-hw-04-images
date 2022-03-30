@@ -1,4 +1,5 @@
-import React from "react";
+import React, { useState } from "react";
+import PropTypes from "prop-types";
 import {
   SearchBarHeader,
   SearchForm,
@@ -6,51 +7,43 @@ import {
   SearchFormInput,
 } from "./Searchbar.styled";
 import { ReactComponent as SearchIcon } from "../../icon/search_icon.svg";
-
-class Searchbar extends React.Component {
-  state = {
-    imageName: "",
+function Searchbar({ onSubmit }) {
+  const [imageName, setImageName] = useState("");
+  const handleNameChange = (event) => {
+    setImageName(event.currentTarget.value.toLowerCase());
   };
-  handleNameChange = (event) => {
-    this.setState({ imageName: event.currentTarget.value.toLowerCase() });
-  };
-  handleSubmit = (event) => {
+  const handleSubmit = (event) => {
     event.preventDefault();
-    const { imageName } = this.state;
-    const { onSubmit } = this.props;
 
     if (imageName.trim() === "") {
       return alert("Please, enter a text!");
     }
 
     onSubmit(imageName);
-    this.setState({
-      imageName: "",
-    });
+    setImageName("");
   };
+  return (
+    <SearchBarHeader>
+      <SearchForm onSubmit={handleSubmit}>
+        <SearchFormButton type="submit">
+          <span>
+            <SearchIcon />
+          </span>
+        </SearchFormButton>
 
-  render() {
-    const { imageName } = this.state;
-    return (
-      <SearchBarHeader>
-        <SearchForm onSubmit={this.handleSubmit}>
-          <SearchFormButton type="submit">
-            <span>
-              <SearchIcon />
-            </span>
-          </SearchFormButton>
-
-          <SearchFormInput
-            type="text"
-            autoComplete="off"
-            autoFocus
-            value={imageName}
-            placeholder="Search images and photos"
-            onChange={this.handleNameChange}
-          />
-        </SearchForm>
-      </SearchBarHeader>
-    );
-  }
+        <SearchFormInput
+          type="text"
+          autoComplete="off"
+          autoFocus
+          value={imageName}
+          placeholder="Search images and photos"
+          onChange={handleNameChange}
+        />
+      </SearchForm>
+    </SearchBarHeader>
+  );
 }
+Searchbar.propTypes = {
+  onSubmit: PropTypes.func.isRequired,
+};
 export default Searchbar;
